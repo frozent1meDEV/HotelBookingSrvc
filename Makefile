@@ -1,0 +1,9 @@
+build:
+	@go build -o bin/api
+
+run: build
+	@./bin/api
+
+tests:
+	@go test -v ./...
+
