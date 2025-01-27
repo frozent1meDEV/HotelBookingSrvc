@@ -3,12 +3,11 @@ package main
 import (
 	"HotelBookingSrvc/api"
 	"HotelBookingSrvc/db"
-	"HotelBookingSrvc/types"
+	_ "HotelBookingSrvc/types"
 	"context"
 	"flag"
-	"fmt"
 	"github.com/gofiber/fiber/v2"
-	"go.mongodb.org/mongo-driver/bson"
+	_ "go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
@@ -17,6 +16,12 @@ import (
 const dburi = "mongodb://localhost:27017"
 const dbname = "hotel-reservation"
 const userColl = "users"
+
+var config = fiber.Config{
+	ErrorHandler: func(c *fiber.Ctx, err error) error {
+		return c.JSON(map[string]string{"error": err.Error()})
+	},
+}
 
 func main() {
 
@@ -30,10 +35,11 @@ func main() {
 
 	userHandler := api.NewUserHandler(db.NewMongoUserStore(client))
 
-	app := fiber.New()
+	app := fiber.New(config)
 	apiv1 := app.Group("/api/v1")
 
-	apiv1.Get("/Users", userHandler.HandleGetUsers)
-	apiv1.Get("/Users/:id", userHandler.HandleGetUser)
+	apiv1.Post("/User", userHandler.HandlePostUser)
+	apiv1.Get("/User", userHandler.HandleGetUsers)
+	apiv1.Get("/User/:id", userHandler.HandleGetUser)
 	app.Listen(*listenAddr)
 }
