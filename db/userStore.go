@@ -28,7 +28,7 @@ func NewMongoUserStore(client *mongo.Client) *MongoUserStore {
 	}
 }
 
-func (s *MongoUserStore) IsertUser(ctx context.Context, user *types.User) (*types.User, error) {
+func (s *MongoUserStore) InsertUser(ctx context.Context, user *types.User) (*types.User, error) {
 	res, err := s.coll.InsertOne(ctx, user)
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func (s *MongoUserStore) GetUsers(ctx context.Context) ([]*types.User, error) {
 		return nil, err
 	}
 	var users []*types.User
-	if err := cur.Decode(&users); err != nil {
+	if err := cur.All(ctx, &users); err != nil {
 		return []*types.User{}, nil
 	}
 	return users, nil
