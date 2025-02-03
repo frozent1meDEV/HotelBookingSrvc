@@ -7,6 +7,7 @@ import (
 	"context"
 	"flag"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	_ "go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -25,7 +26,7 @@ var config = fiber.Config{
 
 func main() {
 
-	listenAddr := flag.String("ListenAddr", ":5000", "listen address")
+	listenAddr := flag.String("ListenAddr", ":3000", "listen address")
 	flag.Parse()
 
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(dburi))
@@ -36,8 +37,16 @@ func main() {
 	userHandler := api.NewUserHandler(db.NewMongoUserStore(client))
 
 	app := fiber.New(config)
+
+	app.Use(cors.New(cors.Config{
+		AllowMethods: "GET,POST,PUT,DELETE",
+		AllowOrigins: "*",
+	}))
+
 	apiv1 := app.Group("/api/v1")
 
+	apiv1.Put("/user/:id", userHandler.HandlePutUser)
+	apiv1.Delete("/user/:id", userHandler.HandleDeleteUser)
 	apiv1.Post("/user", userHandler.HandlePostUser)
 	apiv1.Get("/user", userHandler.HandleGetUsers)
 	apiv1.Get("/user/:id", userHandler.HandleGetUser)

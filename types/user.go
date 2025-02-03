@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 	"regexp"
@@ -14,10 +15,15 @@ const (
 	minPasswordLen  = 8
 )
 
+type UpdateUserParams struct {
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+}
+
 type CreateUserParams struct {
-	FirstName string `bson:"firstName" json:"firstName"`
-	LastName  string `bson:"lastName" json:"lastName"`
-	Email     string `bson:"email" json:"email"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Email     string `json:"email"`
 	Password  string `json:"password"`
 }
 type User struct {
@@ -28,22 +34,33 @@ type User struct {
 	EncryptedPassword string             `bson:"EncryptedPassword" json:"-"`
 }
 
-func (params CreateUserParams) Validate() []string {
-	errors := []string{}
+func (p UpdateUserParams) ToBSON() bson.M {
+	m := bson.M{}
+	if len(p.FirstName) > 0 {
+		m["firstName"] = p.FirstName
+	}
+	if len(p.FirstName) > 0 {
+		m["lastName"] = p.LastName
+	}
+	return m
+}
+
+func (params CreateUserParams) Validate() map[string]string {
+	errors := map[string]string{}
 	if len(params.FirstName) < minFirstNameLen {
-		errors = append(errors, fmt.Sprintf("First name must be at least %d characters",
-			minFirstNameLen))
+		errors["First Name"] = fmt.Sprintf("First name must be at least %d characters",
+			minFirstNameLen)
 	}
 	if len(params.LastName) < minLastNameLen {
-		errors = append(errors, fmt.Sprintf("Last name must be at least %d characters",
-			minLastNameLen))
+		errors["Last Name"] = fmt.Sprintf("Last name must be at least %d characters",
+			minLastNameLen)
 	}
 	if len(params.Password) < minPasswordLen {
-		errors = append(errors, fmt.Sprintf("Password must be at least %d characters",
-			minPasswordLen))
+		errors["Password"] = fmt.Sprintf("Password must be at least %d characters",
+			minPasswordLen)
 	}
 	if !isEmailValid(params.Email) {
-		errors = append(errors, fmt.Sprintf("Email is invalid"))
+		errors["Email"] = fmt.Sprintf("Email is invalid")
 	}
 	return errors
 }

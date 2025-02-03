@@ -1,4 +1,7 @@
-build:
+fmt:
+	@go fmt ./...
+
+build: fmt
 	@go build -o bin/api
 
 run: build

@@ -3,9 +3,11 @@ package db
 import (
 	"HotelBookingSrvc/types"
 	"context"
+	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"log"
 )
 
 const userColl = "users"
@@ -14,6 +16,8 @@ type UserStore interface {
 	GetUserByID(context.Context, string) (*types.User, error)
 	GetUsers(context.Context) ([]*types.User, error)
 	InsertUser(context.Context, *types.User) (*types.User, error)
+	DeleteUser(context.Context, string) error
+	UpdateUser(ctx context.Context, filter bson.M, params types.UpdateUserParams) error
 }
 
 type MongoUserStore struct {
@@ -26,6 +30,37 @@ func NewMongoUserStore(client *mongo.Client) *MongoUserStore {
 		client: client,
 		coll:   client.Database(DBNAME).Collection(userColl),
 	}
+}
+
+func (s *MongoUserStore) UpdateUser(ctx context.Context, filter bson.M, params types.UpdateUserParams) error {
+	// Construct the update document with $set at the top level
+	update := bson.M{"$set": params.ToBSON()}
+
+	result, err := s.coll.UpdateOne(ctx, filter, update)
+	if err != nil {
+		log.Printf("Error updating user: %v", err)
+		return err
+	}
+
+	if result.MatchedCount == 0 {
+		log.Println("No matching document found for the given filter")
+		return fmt.Errorf("no matching document found for the given filter")
+	}
+
+	log.Printf("Matched %d documents and modified %d documents", result.MatchedCount, result.ModifiedCount)
+	return nil
+}
+
+func (s *MongoUserStore) DeleteUser(ctx context.Context, id string) error {
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+	_, err = s.coll.DeleteOne(ctx, bson.M{"_id": oid})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *MongoUserStore) InsertUser(ctx context.Context, user *types.User) (*types.User, error) {
