@@ -7,6 +7,9 @@ build: fmt
 run: build
 	@./bin/api
 
+seed:
+	@go run scripts/seed.go
+
 tests:
 	@go test -v ./...
 

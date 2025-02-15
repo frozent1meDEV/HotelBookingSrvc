@@ -14,8 +14,6 @@ import (
 	"log"
 )
 
-const dburi = "mongodb://localhost:27017"
-const dbname = "hotel-reservation"
 const userColl = "users"
 
 var config = fiber.Config{
@@ -29,26 +27,38 @@ func main() {
 	listenAddr := flag.String("ListenAddr", ":3000", "listen address")
 	flag.Parse()
 
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(dburi))
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(db.DBURI))
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	userHandler := api.NewUserHandler(db.NewMongoUserStore(client))
-
-	app := fiber.New(config)
+	var (
+		hotelStore = db.NewMongoHotelStore(client)
+		roomStore  = db.NewMongoRoomStore(client, hotelStore)
+		userStore  = db.NewMongoUserStore()
+		store      = &db.Store{
+			Hotel: hotelStore,
+			Room:  roomStore,
+			User:  userStore,
+		}
+		userHandler  = api.NewUserHandler(userStore)
+		hotelHandler = api.NewHotelHandler(store)
+		app          = fiber.New()
+		apiv1        = app.Group("/api/v1")
+	)
 
 	app.Use(cors.New(cors.Config{
 		AllowMethods: "GET,POST,PUT,DELETE",
 		AllowOrigins: "*",
 	}))
 
-	apiv1 := app.Group("/api/v1")
-
 	apiv1.Put("/user/:id", userHandler.HandlePutUser)
 	apiv1.Delete("/user/:id", userHandler.HandleDeleteUser)
 	apiv1.Post("/user", userHandler.HandlePostUser)
 	apiv1.Get("/user", userHandler.HandleGetUsers)
 	apiv1.Get("/user/:id", userHandler.HandleGetUser)
+
+	apiv1.Get("/hotel", hotelHandler.HandleGetHotels)
+	apiv1.Get("/hotel/:id", hotelHandler.HandleGetHotel)
+	apiv1.Get("/hotel/:id/rooms", hotelHandler.HandleGetRooms)
 	app.Listen(*listenAddr)
 }
