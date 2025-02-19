@@ -27,12 +27,12 @@ func NewMongoHotelStore(client *mongo.Client) *MongoHotelStore {
 	}
 }
 
-func (s *MongoHotelStore) GetHotelByID(ctx context.Context, id primitive.ObjectID) (*types.Hotel, error) {
-	var hotel []*types.Hotel
-	if err := s.coll.FindOne(ctx, bson.M{"_id": id}).Decode(&hotels); err != nil {
+func (s *MongoHotelStore) GetHotelByID(ctx context.Context,
+	id primitive.ObjectID) (*types.Hotel, error) {
+	var hotel types.Hotel
+	if err := s.coll.FindOne(ctx, bson.M{"_id": id}).Decode(&hotel); err != nil {
 		return nil, err
 	}
-
 	return &hotel, nil
 }
 

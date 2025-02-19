@@ -2,6 +2,7 @@ package main
 
 import (
 	"HotelBookingSrvc/api"
+	"HotelBookingSrvc/api/middleware"
 	"HotelBookingSrvc/db"
 	_ "HotelBookingSrvc/types"
 	"context"
@@ -34,22 +35,27 @@ func main() {
 	var (
 		hotelStore = db.NewMongoHotelStore(client)
 		roomStore  = db.NewMongoRoomStore(client, hotelStore)
-		userStore  = db.NewMongoUserStore()
+		userStore  = db.NewMongoUserStore(client)
 		store      = &db.Store{
 			Hotel: hotelStore,
 			Room:  roomStore,
 			User:  userStore,
 		}
 		userHandler  = api.NewUserHandler(userStore)
-		hotelHandler = api.NewHotelHandler(store)
-		app          = fiber.New()
-		apiv1        = app.Group("/api/v1")
+		hotelHandler = api.NewHotelHandler(*store)
+		authHandler  = api.NewAuthHandler(userStore)
+		app          = fiber.New(config)
+		auth         = app.Group("/api")
+		apiv1        = app.Group("/api/v1", middleware.JWTAuth)
 	)
 
 	app.Use(cors.New(cors.Config{
 		AllowMethods: "GET,POST,PUT,DELETE",
 		AllowOrigins: "*",
 	}))
+
+	//Auth
+	auth.Post("/auth", authHandler.HandleAuth)
 
 	apiv1.Put("/user/:id", userHandler.HandlePutUser)
 	apiv1.Delete("/user/:id", userHandler.HandleDeleteUser)

@@ -10,7 +10,7 @@ import (
 
 type RoomStore interface {
 	InsertRoom(ctx context.Context, room *types.Room) (*types.Room, error)
-	GetRoomsByHotelID(ctx context.Context, hotelID primitive.ObjectID) ([]*types.Room, error)
+	GetRooms(context.Context, bson.M) ([]*types.Room, error)
 }
 
 type MongoRoomStore struct {
@@ -27,7 +27,7 @@ func NewMongoRoomStore(client *mongo.Client, hotelStore HotelStore) *MongoRoomSt
 	}
 }
 
-func (s *MongoRoomStore) GetRoomsByHotelID(ctx context.Context, filter bson.M) (*types.Room,
+func (s *MongoRoomStore) GetRooms(ctx context.Context, filter bson.M) ([]*types.Room,
 	error) {
 	resp, err := s.coll.Find(ctx, filter)
 	if err != nil {
